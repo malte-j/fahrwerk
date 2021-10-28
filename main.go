@@ -15,29 +15,34 @@ import (
 )
 
 func main() {
+
 	cfg := yacspin.Config{
-		Frequency:       100 * time.Millisecond,
-		CharSet:         yacspin.CharSets[14],
-		Suffix: " ",
-		Colors: []string{"fgGreen"},
-		StopColors:      []string{"fgGreen"},
+		Frequency:  100 * time.Millisecond,
+		CharSet:    yacspin.CharSets[14],
+		Suffix:     " ",
+		Colors:     []string{"fgGreen"},
+		StopColors: []string{"fgGreen"},
 	}
 	spinner, _ := yacspin.New(cfg)
 
-
 	hcloudToken, _ := cli.GetHcloudToken()
-
 
 	spinner.Message("Connecting to HCloud")
 	spinner.Start()
 	client := hcloud.NewClient(hcloud.WithToken(hcloudToken))
 	spinner.Stop()
 
+	spinner.Message("Loading Server Types")
+	spinner.Start()
+	types := getAllServerTypes(client)
+	spinner.Stop()
+	serverType := cli.SelectServerType(types)
+
 	spinner.Message("Loading Keys")
 	spinner.Start()
 	sshKeys := getAllSSHKeys(client)
 	spinner.Stop()
-	cli.SelectSSHKey(sshKeys)
+	sshKey := cli.SelectSSHKey(sshKeys)
 
 	cli.SelectNodeAmount()
 
@@ -45,28 +50,50 @@ func main() {
 	spinner.Start()
 	locations := getAllLocations(client)
 	spinner.Stop()
-	cli.SelectLocation(locations)
-
+	location := cli.SelectLocation(locations)
 
 	spinner.Message("Loading Images")
 	spinner.Start()
 	images := getAllImages(client)
 	spinner.Stop()
-	cli.SelectImage(images)
+	image, _ := cli.SelectImage(images)
+
+	createClusterConfirmation := cli.ConfirmClusterCreation()
+	if !createClusterConfirmation {
+		fmt.Println("Aborting...")
+		return
+	}
+
+	spinner.Message("Creating Cluster")
+	spinner.Start()
+	time.Sleep(3 * time.Second)
+	createCluster(client, CreateClusterConfig{
+		Image:      image,
+		Location:   location,
+		SSHKey:     sshKey,
+		ServerType: serverType,
+	})
+	spinner.StopMessage("Successfully created the cluster!")
+	spinner.Stop()
 }
 
-func createServer(client *hcloud.Client) {
-	cx11ServerType, _, _ := client.ServerType.Get(context.Background(), "cx11")
-	ubuntuImage, _, _ := client.Image.GetByName(context.Background(), "ubuntu-20.04")
-	nurnbergLocation, _, _ := client.Location.GetByName(context.Background(), "nbg1")
-	sshKey, _, _ := client.SSHKey.GetByName(context.Background(), "malte@maltspad")
+type CreateClusterConfig struct {
+	ServerType *hcloud.ServerType
+	Image      *hcloud.Image
+	Location   *hcloud.Location
+	SSHKey     *hcloud.SSHKey
+}
 
+func createCluster(client *hcloud.Client, config CreateClusterConfig) {
+	if "no" == "no" {
+		return
+	}
 	createdServer, _, err := client.Server.Create(context.Background(), hcloud.ServerCreateOpts{
 		Name:       "main-1",
-		Image:      ubuntuImage,
-		ServerType: cx11ServerType,
-		Location:   nurnbergLocation,
-		SSHKeys:    []*hcloud.SSHKey{sshKey},
+		Image:      config.Image,
+		ServerType: config.ServerType,
+		Location:   config.Location,
+		SSHKeys:    []*hcloud.SSHKey{config.SSHKey},
 		Labels:     map[string]string{"kubernetes": "true"},
 	})
 	if err != nil {
@@ -94,6 +121,11 @@ func getAllLocations(client *hcloud.Client) []*hcloud.Location {
 	allLocations, _ := client.Location.All(context.Background())
 
 	return allLocations
+}
+
+func getAllServerTypes(client *hcloud.Client) []*hcloud.ServerType {
+	allServerTypes, _ := client.ServerType.All(context.Background())
+	return allServerTypes
 }
 
 func getAllSSHKeys(client *hcloud.Client) []*hcloud.SSHKey {

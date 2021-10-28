@@ -44,6 +44,23 @@ func SelectLocation(locations []*hcloud.Location) *hcloud.Location {
 	return locations[i]
 }
 
+func SelectServerType(serverTypes []*hcloud.ServerType) *hcloud.ServerType {
+	templates := &promptui.SelectTemplates{
+		Active:   "► {{ .Description }} ({{ .Name | faint }})",
+		Inactive: "  {{ .Description }} ({{ .Name | faint }})",
+		Selected: `{{ "Server Type:" | faint }} {{ .Description }}`,
+	}
+
+	prompt := promptui.Select{
+		Label:     `Select a Server Type`,
+		Items:     serverTypes,
+		Templates: templates,
+	}
+
+	i, _, _ := prompt.Run()
+	return serverTypes[i]
+}
+
 func SelectNodeAmount() int {
 	validate := func(input string) error {
 		_, err := strconv.Atoi(input)
@@ -62,7 +79,7 @@ func SelectNodeAmount() int {
 		Default:   "2",
 		Validate:  validate,
 		Templates: templates,
-		Pointer: promptui.PipeCursor,
+		Pointer:   promptui.PipeCursor,
 	}
 
 	result, _ := prompt.Run()
@@ -92,8 +109,8 @@ func SelectImage(images []*hcloud.Image) (selectedImage *hcloud.Image, err error
 		Items:     images,
 		Templates: templates,
 		Size:      4,
-		
-		Searcher:  searcher,
+
+		Searcher: searcher,
 	}
 
 	i, _, err := prompt.Run()
@@ -102,7 +119,7 @@ func SelectImage(images []*hcloud.Image) (selectedImage *hcloud.Image, err error
 
 func GetHcloudToken() (result string, err error) {
 	envToken, envTokenExists := os.LookupEnv("HCLOUD_TOKEN")
-	if(envTokenExists) {
+	if envTokenExists {
 		return envToken, nil
 	}
 
@@ -113,4 +130,23 @@ func GetHcloudToken() (result string, err error) {
 	}
 
 	return prompt.Run()
+}
+
+func ConfirmClusterCreation() bool {
+	prompt := promptui.Prompt{
+		Label:     "Do you really want to create the cluster",
+		IsConfirm: true,
+	}
+
+	confirmationResult, _ := prompt.Run()
+	confirmationResultLowercase := strings.ToLower(confirmationResult)
+
+	switch confirmationResultLowercase {
+	case "y":
+		return true
+	case "yes":
+		return true
+	}
+
+	return false
 }
