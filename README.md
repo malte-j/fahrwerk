@@ -8,12 +8,5 @@
 
 
 <div align="center">
-  <img width="80%" src="https://user-images.githubusercontent.com/12611076/139263566-9e083a4d-634d-4f8d-a0e0-f0036a9bc51a.gif"/>
+  <img src="https://user-images.githubusercontent.com/12611076/139272257-3bc5dbfb-dcef-4026-b44d-798e6b6ecb1a.gif"/>
 </div>
-<!-- ![fahrwerk_demo](https://user-images.githubusercontent.com/12611076/139263566-9e083a4d-634d-4f8d-a0e0-f0036a9bc51a.gif) -->
-
-<!-- 
-## Building
-
-Use `go run ./main.go`
- -->
