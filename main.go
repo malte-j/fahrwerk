@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
 	"github.com/SkyGuardian42/fahrwerk/cli"
+	"github.com/SkyGuardian42/fahrwerk/hetzner"
+	"github.com/SkyGuardian42/fahrwerk/k3s"
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"github.com/theckman/yacspin"
 
@@ -15,7 +16,6 @@ import (
 )
 
 func main() {
-
 	cfg := yacspin.Config{
 		Frequency:  100 * time.Millisecond,
 		CharSet:    yacspin.CharSets[14],
@@ -67,13 +67,25 @@ func main() {
 	spinner.Message("Creating Cluster")
 	spinner.Start()
 	time.Sleep(3 * time.Second)
-	createCluster(client, CreateClusterConfig{
-		Image:      image,
-		Location:   location,
-		SSHKey:     sshKey,
-		ServerType: serverType,
+	network, res, err := hetzner.CreateNetwork(client)
+
+	if err != nil {
+		fmt.Print(res)
+		return
+	}
+
+	server, _, _ := hetzner.CreateServer(client, hetzner.CreateServerConfig{
+		ServerType:  serverType,
+		Image:       image,
+		Location:    location,
+		SSHKey:      sshKey,
+		Network:     network,
+		ClusterRole: k3s.Master,
 	})
-	spinner.StopMessage("Successfully created the cluster!")
+
+	successMessage := "Successfully created server with IP:" + server.Server.PublicNet.IPv4.IP.String()
+
+	spinner.StopMessage(successMessage)
 	spinner.Stop()
 }
 
@@ -82,25 +94,6 @@ type CreateClusterConfig struct {
 	Image      *hcloud.Image
 	Location   *hcloud.Location
 	SSHKey     *hcloud.SSHKey
-}
-
-func createCluster(client *hcloud.Client, config CreateClusterConfig) {
-	if "no" == "no" {
-		return
-	}
-	createdServer, _, err := client.Server.Create(context.Background(), hcloud.ServerCreateOpts{
-		Name:       "main-1",
-		Image:      config.Image,
-		ServerType: config.ServerType,
-		Location:   config.Location,
-		SSHKeys:    []*hcloud.SSHKey{config.SSHKey},
-		Labels:     map[string]string{"kubernetes": "true"},
-	})
-	if err != nil {
-		log.Fatalf("error retrieving server: %s\n", err)
-	}
-
-	fmt.Println("created server with ip:", createdServer.Server.PublicNet.IPv4.IP)
 }
 
 func getAllImages(client *hcloud.Client) []*hcloud.Image {

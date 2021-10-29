@@ -8,13 +8,19 @@ import (
 	"time"
 )
 
+type ClusterRole string
+
+const (
+	Master ClusterRole = "Master"
+	Worker ClusterRole = "Worker"
+)
+
 type MasterScriptConfig struct {
 	K3sVersion string
 	K3sToken   string
 }
 
 func GenerateMasterScript(config MasterScriptConfig) string {
-
 	t, err := template.New("masterConfig").Parse(`
 		curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="{{ .K3sVersion }}" K3S_TOKEN="{{ .K3sToken }}" INSTALL_K3S_EXEC="server \
 			--disable-cloud-controller \
