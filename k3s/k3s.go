@@ -16,13 +16,12 @@ const (
 )
 
 type MasterScriptConfig struct {
-	K3sVersion string
 	K3sToken   string
 }
 
 func GenerateMasterScript(config MasterScriptConfig) string {
 	t, err := template.New("masterConfig").Parse(`
-		curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="{{ .K3sVersion }}" K3S_TOKEN="{{ .K3sToken }}" INSTALL_K3S_EXEC="server \
+		curl -sfL https://get.k3s.io | K3S_TOKEN="{{ .K3sToken }}" INSTALL_K3S_EXEC="server \
 			--disable-cloud-controller \
 			--disable servicelb \
 			--disable traefik \
@@ -37,7 +36,6 @@ func GenerateMasterScript(config MasterScriptConfig) string {
 			--kube-proxy-arg="metrics-bind-address=0.0.0.0" \
 			--kube-scheduler-arg="address=0.0.0.0" \
 			--kube-scheduler-arg="bind-address=0.0.0.0" \
-			#{taint} \
 			--kubelet-arg="cloud-provider=external" \
 			--advertise-address=$(hostname -I | awk '{print $2}') \
 			--node-ip=$(hostname -I | awk '{print $2}') \
@@ -45,6 +43,9 @@ func GenerateMasterScript(config MasterScriptConfig) string {
 			--flannel-iface=#{flannel_interface} \
 			--cluster-init" sh -
 	`)
+
+	// 			#{taint} \
+
 	if err != nil {
 		panic(err)
 	}

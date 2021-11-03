@@ -15,17 +15,8 @@ func TestGenerateMasterScript(t *testing.T) {
 		want string
 	}{
 		{
-			name: "Test K3s version",
-			args: args{config: MasterScriptConfig{
-				K3sVersion: "1.0",
-				K3sToken:   "alksnd1n010s92",
-			}},
-			want: "INSTALL_K3S_VERSION=\"1.0\"",
-		},
-		{
 			name: "Test K3s Token",
 			args: args{config: MasterScriptConfig{
-				K3sVersion: "1.0",
 				K3sToken:   "alksnd1n010s92",
 			}},
 			want: "K3S_TOKEN=\"alksnd1n010s92\"",
