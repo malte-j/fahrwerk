@@ -10,7 +10,7 @@ import (
 	"github.com/manifoldco/promptui"
 )
 
-func SelectSSHKey(existingSSHKeys []*hcloud.SSHKey) *hcloud.SSHKey {
+func SelectSSHKey(existingSSHKeys []*hcloud.SSHKey) (*hcloud.SSHKey, error) {
 	templates := &promptui.SelectTemplates{
 		Active:   "► {{ .Name }}",
 		Inactive: "  {{ .Name }}",
@@ -23,11 +23,14 @@ func SelectSSHKey(existingSSHKeys []*hcloud.SSHKey) *hcloud.SSHKey {
 		Templates: templates,
 	}
 
-	i, _, _ := prompt.Run()
-	return existingSSHKeys[i]
+	i, _, err := prompt.Run()
+	if err != nil {
+		return nil, err
+	}
+	return existingSSHKeys[i], nil
 }
 
-func SelectLocation(locations []*hcloud.Location) *hcloud.Location {
+func SelectLocation(locations []*hcloud.Location) (*hcloud.Location, error) {
 	templates := &promptui.SelectTemplates{
 		Active:   "► {{ .City }} ({{ .Name | faint }})",
 		Inactive: "  {{ .City }} ({{ .Name | faint }})",
@@ -40,11 +43,14 @@ func SelectLocation(locations []*hcloud.Location) *hcloud.Location {
 		Templates: templates,
 	}
 
-	i, _, _ := prompt.Run()
-	return locations[i]
+	i, _, err := prompt.Run()
+	if err != nil {
+		return nil, err
+	}
+	return locations[i], nil
 }
 
-func SelectServerType(serverTypes []*hcloud.ServerType) *hcloud.ServerType {
+func SelectServerType(serverTypes []*hcloud.ServerType) (*hcloud.ServerType, error) {
 	templates := &promptui.SelectTemplates{
 		Active:   "► {{ .Description }} ({{ .Name | faint }})",
 		Inactive: "  {{ .Description }} ({{ .Name | faint }})",
@@ -57,11 +63,14 @@ func SelectServerType(serverTypes []*hcloud.ServerType) *hcloud.ServerType {
 		Templates: templates,
 	}
 
-	i, _, _ := prompt.Run()
-	return serverTypes[i]
+	i, _, err := prompt.Run()
+	if err != nil {
+		return nil, err 
+	}
+	return serverTypes[i], nil
 }
 
-func SelectNodeAmount() int {
+func SelectNodeAmount() (int, error) {
 	validate := func(input string) error {
 		_, err := strconv.Atoi(input)
 		if err != nil {
@@ -82,10 +91,17 @@ func SelectNodeAmount() int {
 		Pointer:   promptui.PipeCursor,
 	}
 
-	result, _ := prompt.Run()
-	resultInt, _ := strconv.Atoi(result)
+	result, err := prompt.Run()
+	if err != nil {
+		return 0, err
+	}
 
-	return resultInt
+	resultInt, err := strconv.Atoi(result)
+	if err != nil {
+		return 0, err
+	}
+
+	return resultInt, nil
 }
 
 func SelectImage(images []*hcloud.Image) (selectedImage *hcloud.Image, err error) {

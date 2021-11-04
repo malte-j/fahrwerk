@@ -32,31 +32,51 @@ func main() {
 	client := hcloud.NewClient(hcloud.WithToken(hcloudToken))
 	spinner.Stop()
 
+	spinner.Message("Loading Locations")
+	spinner.Start()
+	locations, _ := getAllLocations(client)
+	spinner.Stop()
+	location, err := cli.SelectLocation(locations)
+	if err != nil {
+		fmt.Println("Aborting...")
+		return
+	}
+
 	spinner.Message("Loading Server Types")
 	spinner.Start()
-	types := getAllServerTypes(client)
+	types := getServerTypes(client, location)
 	spinner.Stop()
-	serverType := cli.SelectServerType(types)
+	serverType, err := cli.SelectServerType(types)
+	if err != nil {
+		fmt.Println("Aborting...")
+		return
+	}
 
 	spinner.Message("Loading Keys")
 	spinner.Start()
 	sshKeys := getAllSSHKeys(client)
 	spinner.Stop()
-	sshKey := cli.SelectSSHKey(sshKeys)
+	sshKey, err := cli.SelectSSHKey(sshKeys)
+	if err != nil {
+		fmt.Println("Aborting...")
+		return
+	}
 
-	cli.SelectNodeAmount()
-
-	spinner.Message("Loading Locations")
-	spinner.Start()
-	locations := getAllLocations(client)
-	spinner.Stop()
-	location := cli.SelectLocation(locations)
+	_, err = cli.SelectNodeAmount()
+	if err != nil {
+		fmt.Println("Aborting...")
+		return
+	}
 
 	spinner.Message("Loading Images")
 	spinner.Start()
 	images := getAllImages(client)
 	spinner.Stop()
-	image, _ := cli.SelectImage(images)
+	image, err := cli.SelectImage(images)
+	if err != nil {
+		fmt.Println("Aborting...")
+		return
+	}
 
 	createClusterConfirmation := cli.ConfirmClusterCreation()
 	if !createClusterConfirmation {
@@ -110,15 +130,26 @@ func getAllImages(client *hcloud.Client) []*hcloud.Image {
 	return filteredImages
 }
 
-func getAllLocations(client *hcloud.Client) []*hcloud.Location {
-	allLocations, _ := client.Location.All(context.Background())
-
-	return allLocations
+func getAllLocations(client *hcloud.Client) ([]*hcloud.Location, error) {
+	return client.Location.All(context.Background())
 }
 
-func getAllServerTypes(client *hcloud.Client) []*hcloud.ServerType {
+func getServerTypes(client *hcloud.Client, selectedLocation *hcloud.Location) []*hcloud.ServerType {
 	allServerTypes, _ := client.ServerType.All(context.Background())
-	return allServerTypes
+
+	var filteredServerTypes []*hcloud.ServerType
+
+	for _, serverType := range allServerTypes {
+		for _, pricing := range serverType.Pricings {
+			location := pricing.Location
+			if location.Name == selectedLocation.Name {
+				filteredServerTypes = append(filteredServerTypes, serverType)
+				break
+			}
+		}
+	}
+
+	return filteredServerTypes
 }
 
 func getAllSSHKeys(client *hcloud.Client) []*hcloud.SSHKey {

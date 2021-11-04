@@ -49,6 +49,7 @@ func CreateServer(client *hcloud.Client, config CreateServerConfig) (hcloud.Serv
 		Location:   config.Location,
 		Networks: []*hcloud.Network{config.Network},
 		SSHKeys:    []*hcloud.SSHKey{config.SSHKey},
+		
 		Labels: map[string]string{
 			"cluster":      "",
 			"cluster-role": string(config.ClusterRole),
